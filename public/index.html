@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1015"><title>FugaCliente · Atención y retención</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-story"><div class="brand"><span class="brand-mark">f.</span> FugaCliente</div>
+      <span class="eyebrow">ATENCIÓN QUE CONSERVA CLIENTES</span>
+      <h1>Escucha las señales.<br><span>Actúa a tiempo.</span></h1>
+      <p>Identifica experiencias que necesitan atención, entiende el riesgo y coordina una respuesta con tu equipo.</p>
+      <div class="signal-art" aria-hidden="true"><span class="pulse-dot"></span><div class="signal-line"></div><div class="signal-label">Una mala experiencia merece una buena respuesta.</div></div>
+      <p class="login-footer">Proyecto de Desarrollo Web Full Stack Backend</p>
+    </div>
+    <div class="login-panel"><form id="loginForm" class="login-card">
+      <span class="eyebrow">TU CENTRO DE ATENCIÓN</span><h2>Bienvenido de nuevo</h2><p>Ingresa para revisar a tus clientes y su seguimiento.</p>
+      <label>Correo electrónico<input name="email" type="email" autocomplete="username" required value="admin@fugacliente.local"></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required placeholder="Ingresa tu contraseña"></label>
+      <p id="loginError" class="form-error" role="alert"></p><button class="button primary" type="submit">Ingresar al panel <span aria-hidden="true">↗</span></button>
+      <p id="demoHint" class="demo-hint" hidden>Demo local · contraseña: <strong>FugaCliente2026!</strong><br>Los cambios se reinician al cerrar el servidor.</p>
+      <div class="login-note"><span class="status-dot"></span><span id="loginStatus">Comprobando el servicio…</span></div>
+    </form></div>
+  </section>
+  <div id="application" class="app-layout" hidden>
+    <aside class="sidebar"><a href="#overview" class="brand"><span class="brand-mark">f.</span> FugaCliente</a>
+      <p class="sidebar-label">ESPACIO DE TRABAJO</p>
+      <nav aria-label="Navegación principal">
+        <button class="nav-item active" data-view="overview"><span aria-hidden="true">◫</span> Vista general</button>
+        <button class="nav-item" data-view="clients"><span aria-hidden="true">◎</span> Clientes</button>
+        <button class="nav-item" data-view="incidents"><span aria-hidden="true">⚑</span> Incidencias</button>
+        <button class="nav-item" data-view="actions"><span aria-hidden="true">✓</span> Retención</button>
+        <button class="nav-item" data-view="services"><span aria-hidden="true">▦</span> Servicios y equipo</button>
+        <button class="nav-item" data-view="logs" data-privileged><span aria-hidden="true">≡</span> Actividad</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="sidebar-help"><span class="status-dot"></span><strong>Todo empieza escuchando</strong><p>Cada seguimiento es una oportunidad para mejorar.</p></div>
+      <div class="profile"><span id="userAvatar" class="avatar">A</span><div><strong id="userName"></strong><small id="userRole"></small></div><button id="logoutButton" class="icon-button" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button></div></div>
+    </aside>
+    <div class="main-shell"><header class="topbar"><span id="breadcrumb">Espacio de trabajo / Vista general</span><div class="topbar-right"><span id="modePill" class="mode-pill"></span><button id="refreshButton" class="icon-button" title="Actualizar datos" aria-label="Actualizar datos">↻</button><button id="mobileLogoutButton" class="icon-button mobile-only" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button></div></header>
+      <main id="mainContent" tabindex="-1"></main><footer class="main-footer">FugaCliente <span>El puntaje orienta la atención; no representa una probabilidad de abandono.</span></footer>
+    </div>
+  </div>
+  <dialog id="modal"><div class="modal-head"><h2 id="modalTitle"></h2><button id="closeModal" class="icon-button" aria-label="Cerrar ventana">×</button></div><div id="modalContent"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
