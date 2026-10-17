@@ -1,13 +1,13 @@
 {
   "info": {
-    "name": "FugaCliente · Evaluación Parcial",
+    "name": "FugaCliente 2.0 · Evaluación Parcial",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Ejecuta en orden: login, catálogos, crear cliente, crear incidencia, actualizar estado y crear seguimiento. Configura email/password para tu .env. JWT e IDs se guardan automáticamente."
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api"
+      "value": "http://localhost:3000/api/v1"
     },
     {
       "key": "email",
@@ -589,6 +589,77 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 · Resumen de auditoría (agregación)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/logs/summary?days=30"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 · Exportar clientes CSV",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/reports/clients.csv?status=activo"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 · Actualizar SLA del servicio",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/services/{{serviceId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"slaHours\": 24\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
             ]
           }
         }

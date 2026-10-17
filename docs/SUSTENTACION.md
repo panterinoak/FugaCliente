@@ -16,15 +16,15 @@ Adaptamos el caso del PDF a este tema: administramos servicios en lugar de salas
 
 ### 1 Ingreso y arquitectura
 
-Abre el login y entra. Muestra `src/server.js` y `src/app.js`.
+Abre el login y entra. Muestra `docs/arquitectura.png`, `src/server.js`, `src/app.js` y `src/container.js`.
 
-“El servidor verifica las variables de entorno, abre las conexiones y arranca Express. La aplicación monta un router por recurso. La interfaz y Postman utilizan el mismo API; la interfaz no accede directamente a las bases.”
+“El servidor verifica las variables de entorno, abre las conexiones y arranca Express. La aplicación está organizada en capas: rutas, controladores, servicios y repositorios. Las rutas solo declaran middlewares y endpoints; los controladores traducen HTTP a casos de uso; los servicios contienen las reglas de negocio; y los repositorios hablan con SQL Server o MongoDB. `container.js` es la raíz de composición: crea los servicios y les inyecta los repositorios. Por eso la misma lógica funciona con las bases reales, con la demo en memoria y con las pruebas.”
 
-En `src/routes/` señala los archivos de clientes, usuarios, servicios, incidencias y retención. Explica que separar rutas permite localizar el código y mantener responsabilidades claras.
+Sigue una petición: `src/routes/incident.routes.js` → `src/controllers/incident.controller.js` → `src/services/incident.service.js` → `src/repositories/sql.js` → `dbo.sp_RegisterIncident`. Menciona que el API está versionado en `/api/v1` y documentado en `/api/docs`.
 
 ### 2 Validación y errores
 
-En Postman ejecuta la petición de validación inválida. Debe devolver 400. Abre `src/middlewares/validation.js` y `src/utils/errors.js`.
+En Postman ejecuta la petición de validación inválida. Debe devolver 400. Abre `src/validators/schemas.js`, `src/middlewares/validation.js` y `src/utils/errors.js`. En la interfaz, los errores aparecen junto a cada campo.
 
 “Validamos nombres, correos, fechas, IDs y valores permitidos antes de ejecutar la operación. Una entrada inválida recibe 400 y un mensaje con los campos que debe corregir. El manejador global convierte los errores del sistema en JSON y no expone consultas ni contraseñas. Un duplicado se responde con 409 y un recurso inexistente con 404.”
 
@@ -47,7 +47,7 @@ Explica las PK, FK, restricciones de correo único y CHECK de gravedad. Roles, s
 
 ### 4 Riesgo explicable
 
-Abre el detalle del cliente. Muestra `src/services/risk.js`.
+Abre el detalle del cliente (panel lateral). La barra de colores muestra cada factor; su longitud total es el puntaje. Muestra `src/services/risk.js`.
 
 “El puntaje suma señales concretas y tiene un máximo de 100. Considera la calificación más reciente, las incidencias pendientes, los reclamos repetidos, la gravedad y el SLA vencido. La ventana de historial es de 30 días, pero un pendiente antiguo todavía requiere atención. Bajo es menos de 40, medio va de 40 a 69 y alto empieza en 70. Es un índice de prioridad propuesto; no representa una probabilidad estadística ni una IA entrenada.”
 
@@ -78,9 +78,25 @@ db.events.getIndexes()
 
 “Como SQL y MongoDB no comparten una transacción, usamos un outbox. La incidencia y su evento se confirman juntos en SQL. Después un worker envía el evento a MongoDB. Si esa base falla, el evento queda pendiente para reintentarlo. La auditoría puede tardar unos segundos en aparecer.”
 
-### 7 Cierre y entrega
+### 7 Vistas SQL y agregaciones MongoDB
 
-Muestra README, `.env.example`, la colección de Postman y `npm test`.
+Muestra en `database/schema.sql` las vistas `vw_IncidentDetail` y `vw_RetentionActionDetail`: “Encapsulan los JOIN con catálogos; el repositorio solo consulta la vista con parámetros.” La vista `vw_ClientIncidentSummary` sirve para reportes en SSMS:
+
+```sql
+SELECT * FROM dbo.vw_ClientIncidentSummary ORDER BY openIncidents DESC;
+```
+
+Abre Auditoría en la interfaz y `MongoAudit.summary` en `src/repositories/mongo.js`: “Un pipeline `$facet` calcula en una sola consulta los eventos por tipo, la actividad por día y la latencia y tasa de error del API.”
+
+```javascript
+db.events.aggregate([{ $match: { eventType: { $ne: "http.request" } } }, { $group: { _id: "$eventType", total: { $sum: 1 } } }])
+```
+
+Finalmente exporta el CSV desde Clientes para mostrar que el riesgo puede analizarse en Excel.
+
+### 8 Cierre y entrega
+
+Muestra README, `.env.example`, la colección de Postman, `Dockerfile`, `.github/workflows/ci.yml` y `npm test` (41 pruebas).
 
 “La entrega incluye la configuración de ejemplo, el script SQL, documentación y pruebas. Los recursos del API utilizan GET para consultar, POST para crear, PATCH para cambios parciales y DELETE para archivar un cliente. Con esa semántica y códigos de estado implementamos el nivel 2 de Richardson.”
 
@@ -114,6 +130,10 @@ Estas respuestas son una guía conceptual. Adáptalas a lo que realmente ejecute
 | Qué es el SLA | El plazo máximo de atención establecido para cada servicio |
 | Por qué archivar y no borrar | Se conserva la trazabilidad del cliente, sus incidencias y sus comentarios |
 | Qué prueba la demo | Comportamiento de interfaz y API con memoria; no la persistencia SQL/NoSQL |
+| Por qué separar controladores y servicios | El servicio no conoce HTTP: puede probarse y reutilizarse; el controlador no conoce SQL |
+| Para qué sirven las vistas SQL | Encapsulan JOIN repetidos y exponen un contrato estable de lectura |
+| Qué es la inyección de dependencias aquí | `container.js` entrega los repositorios a los servicios; se cambian por memoria en pruebas sin tocar la lógica |
+| Qué hace la CSP | Solo permite scripts, estilos y fuentes del propio servidor; reduce el impacto de un XSS |
 | Qué faltaría para producción | Validar los pesos, medir rendimiento, configurar infraestructura segura y agregar permisos por cartera |
 
 ## Evidencias para preparar en tu computadora

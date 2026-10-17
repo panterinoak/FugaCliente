@@ -1,0 +1,17 @@
+{
+  "name": "FugaCliente · Riesgo y retención de clientes",
+  "short_name": "FugaCliente",
+  "description": "Detecta clientes en riesgo de abandono por mal servicio, explica las causas y coordina la retención.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1E33",
+  "theme_color": "#0F2A47",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icons/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

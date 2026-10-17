@@ -23,6 +23,7 @@ export function loadConfig(input = process.env) {
     ADMIN_EMAIL: z.string().email().default('admin@fugacliente.local'),
     ADMIN_PASSWORD: z.string().min(12).max(72).refine(v => Buffer.byteLength(v, 'utf8') <= 72, 'Máximo 72 bytes UTF-8.').default('FugaCliente2026!'),
     OUTBOX_INTERVAL_MS: z.coerce.number().int().min(500).default(3000),
+    TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
     LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90)
   });
   const parsed = schema.safeParse(input);

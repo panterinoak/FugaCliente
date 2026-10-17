@@ -111,6 +111,49 @@ CREATE INDEX IX_Actions_Status_Due ON dbo.RetentionActions(Status, DueAt) INCLUD
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Outbox_Pending' AND object_id = OBJECT_ID('dbo.AuditOutbox'))
 CREATE INDEX IX_Outbox_Pending ON dbo.AuditOutbox(OccurredAt) WHERE ProcessedAt IS NULL;
 GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Incidents_Status' AND object_id = OBJECT_ID('dbo.Incidents'))
+CREATE INDEX IX_Incidents_Status ON dbo.Incidents(Status, CreatedAt) INCLUDE (ClientId, ServiceId);
+GO
+/* Vistas de lectura: encapsulan los JOIN con catálogos y exponen nombres camelCase que
+   consume directamente la API (src/repositories/sql.js). */
+CREATE OR ALTER VIEW dbo.vw_IncidentDetail
+AS
+SELECT i.IncidentId AS id, i.ClientId AS clientId, c.Name AS clientName,
+       i.ServiceId AS serviceId, s.Name AS serviceName, s.SlaHours AS slaHours,
+       i.CategoryId AS categoryId, cat.Name AS categoryName,
+       i.AssignedUserId AS assignedUserId, u.Name AS assignedUserName, i.CreatedById AS createdById,
+       i.Description AS description, i.Severity AS severity, i.Satisfaction AS satisfaction, i.Status AS status,
+       i.CreatedAt AS createdAt, i.UpdatedAt AS updatedAt, i.ResolvedAt AS resolvedAt, i.Version AS version
+FROM dbo.Incidents i
+JOIN dbo.Clients c ON c.ClientId = i.ClientId
+JOIN dbo.Services s ON s.ServiceId = i.ServiceId
+JOIN dbo.IncidentCategories cat ON cat.CategoryId = i.CategoryId
+LEFT JOIN dbo.Users u ON u.UserId = i.AssignedUserId;
+GO
+CREATE OR ALTER VIEW dbo.vw_RetentionActionDetail
+AS
+SELECT a.ActionId AS id, a.ClientId AS clientId, c.Name AS clientName, l.IncidentId AS incidentId,
+       a.AssignedUserId AS assignedUserId, u.Name AS assignedUserName, a.CreatedById AS createdById,
+       a.Type AS type, a.Description AS description, a.DueAt AS dueAt, a.Status AS status, a.Outcome AS outcome,
+       a.CreatedAt AS createdAt, a.CompletedAt AS completedAt
+FROM dbo.RetentionActions a
+JOIN dbo.Clients c ON c.ClientId = a.ClientId
+JOIN dbo.Users u ON u.UserId = a.AssignedUserId
+LEFT JOIN dbo.RetentionActionIncidents l ON l.ActionId = a.ActionId;
+GO
+/* Vista analítica: resumen por cliente para reportes en SSMS o Power BI. */
+CREATE OR ALTER VIEW dbo.vw_ClientIncidentSummary
+AS
+SELECT c.ClientId AS clientId, c.Name AS clientName, seg.Name AS segmentName, c.Status AS status,
+       COUNT(i.IncidentId) AS totalIncidents,
+       SUM(CASE WHEN i.Status <> 'resuelta' THEN 1 ELSE 0 END) AS openIncidents,
+       SUM(CASE WHEN i.CreatedAt >= DATEADD(DAY, -30, SYSUTCDATETIME()) THEN 1 ELSE 0 END) AS incidentsLast30Days,
+       MAX(i.CreatedAt) AS lastIncidentAt
+FROM dbo.Clients c
+JOIN dbo.ClientSegments seg ON seg.SegmentId = c.SegmentId
+LEFT JOIN dbo.Incidents i ON i.ClientId = c.ClientId
+GROUP BY c.ClientId, c.Name, seg.Name, c.Status;
+GO
 IF NOT EXISTS (SELECT 1 FROM dbo.Roles WHERE Code = 'admin') INSERT dbo.Roles(Code, Name) VALUES ('admin', N'Administrador');
 IF NOT EXISTS (SELECT 1 FROM dbo.Roles WHERE Code = 'analista') INSERT dbo.Roles(Code, Name) VALUES ('analista', N'Analista');
 IF NOT EXISTS (SELECT 1 FROM dbo.Roles WHERE Code = 'agente') INSERT dbo.Roles(Code, Name) VALUES ('agente', N'Agente de atención');

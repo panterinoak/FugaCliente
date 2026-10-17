@@ -26,6 +26,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+  # Aplicación en contenedor (opcional): docker compose --profile app up -d --build
+  # Antes ejecuta npm run db:setup desde tu equipo para crear el esquema.
+  app:
+    build: .
+    profiles: ["app"]
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      SQL_HOST: sqlserver
+      MONGO_URI: mongodb://mongodb:27017
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
 volumes:
   sql_data:
   mongo_data:

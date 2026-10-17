@@ -1,48 +1,171 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1015"><title>FugaCliente · Atención y retención</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
-  <script src="/app.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FugaCliente detecta clientes en riesgo de abandono por mal servicio, explica las causas y coordina acciones de retención.">
+  <meta name="theme-color" content="#0F2A47">
+  <title>FugaCliente · Riesgo y retención de clientes</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preload" href="/fonts/Inter-Regular.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </head>
 <body>
-  <section id="loginScreen" class="login-screen">
-    <div class="login-story"><div class="brand"><span class="brand-mark">f.</span> FugaCliente</div>
-      <span class="eyebrow">ATENCIÓN QUE CONSERVA CLIENTES</span>
-      <h1>Escucha las señales.<br><span>Actúa a tiempo.</span></h1>
-      <p>Identifica experiencias que necesitan atención, entiende el riesgo y coordina una respuesta con tu equipo.</p>
-      <div class="signal-art" aria-hidden="true"><span class="pulse-dot"></span><div class="signal-line"></div><div class="signal-label">Una mala experiencia merece una buena respuesta.</div></div>
-      <p class="login-footer">Proyecto de Desarrollo Web Full Stack Backend</p>
+  <!-- Iconos (sprite SVG). Se usan con <svg class="icon"><use href="#i-nombre"/></svg> -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true">
+    <defs>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.6c2.1.7 3.5 2.6 3.5 5.4"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.2 2.6 17.6A2 2 0 0 0 4.3 20.6h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/></symbol>
+      <symbol id="i-buoy" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.8"/><path d="m5.6 5.6 3.7 3.7M14.7 14.7l3.7 3.7M18.4 5.6l-3.7 3.7M9.3 14.7l-3.7 3.7"/></symbol>
+      <symbol id="i-badge" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="10" r="3"/><path d="M7.8 17.5c.8-1.9 2.3-2.9 4.2-2.9s3.4 1 4.2 2.9"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="m10 16.5 4.5-4.5L10 7.5"/><path d="M14.5 12H4"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7 10.5 5 5 5-5"/><path d="M5 20h14"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+      <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h3.5l1.8 4.5-2.3 1.4a11 11 0 0 0 6.1 6.1l1.4-2.3L20 15.5V19a2 2 0 0 1-2.2 2A17 17 0 0 1 3 6.2 2 2 0 0 1 5 4z"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+      <symbol id="i-note" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 4z"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 0 7.5 23H19v-5"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+      <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12.5h4"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12"/><path d="M12 8C10.5 4 6.5 4.2 7 6.8 7.3 8 12 8 12 8zM12 8c1.5-4 5.5-3.8 5-1.2C16.7 8 12 8 12 8z"/></symbol>
+      <symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 3 3 3-3 3"/><path d="M4 11.5V10a4 4 0 0 1 4-4h12"/><path d="m7 21-3-3 3-3"/><path d="M20 12.5V14a4 4 0 0 1-4 4H4"/></symbol>
+      <symbol id="i-server" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="7" rx="1.5"/><rect x="3.5" y="13" width="17" height="7" rx="1.5"/><path d="M7.5 7.5h.01M7.5 16.5h.01"/></symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.2 17.5a9 9 0 1 1 15.6 0"/><path d="m12 13.5 3.5-5"/><circle cx="12" cy="14" r="1.6"/></symbol>
+    </defs>
+  </svg>
+
+  <a class="skip-link" href="#mainContent">Saltar al contenido</a>
+
+  <!-- ============ Acceso ============ -->
+  <section id="loginScreen" class="login" hidden>
+    <div class="login-aside">
+      <div class="brand brand-light">
+        <img src="/favicon.svg" alt="" width="36" height="36">
+        <span class="brand-text"><strong>FugaCliente</strong><small>Riesgo y retención</small></span>
+      </div>
+      <div class="login-pitch">
+        <h1>Detecta a tiempo a los clientes que están a punto de irse.</h1>
+        <p>Cada incidencia suma señales: satisfacción baja, reclamos repetidos, casos graves o plazos vencidos. FugaCliente las convierte en un puntaje que explica por qué un cliente necesita atención.</p>
+      </div>
+      <figure class="login-sample" aria-label="Ejemplo de puntaje explicable">
+        <div class="sample-head">
+          <span class="avatar avatar-lg">AD</span>
+          <div><strong>Andes Digital</strong><small>3 incidencias abiertas en 8 días</small></div>
+          <span class="sample-score"><b>100</b>/100</span>
+        </div>
+        <div id="loginSampleBar"></div>
+        <ul class="sample-legend" id="loginSampleLegend"></ul>
+      </figure>
+      <p class="login-foot">Proyecto académico · Desarrollo Web Full Stack Backend</p>
     </div>
-    <div class="login-panel"><form id="loginForm" class="login-card">
-      <span class="eyebrow">TU CENTRO DE ATENCIÓN</span><h2>Bienvenido de nuevo</h2><p>Ingresa para revisar a tus clientes y su seguimiento.</p>
-      <label>Correo electrónico<input name="email" type="email" autocomplete="username" required value="admin@fugacliente.local"></label>
-      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required placeholder="Ingresa tu contraseña"></label>
-      <p id="loginError" class="form-error" role="alert"></p><button class="button primary" type="submit">Ingresar al panel <span aria-hidden="true">↗</span></button>
-      <p id="demoHint" class="demo-hint" hidden>Demo local · contraseña: <strong>FugaCliente2026!</strong><br>Los cambios se reinician al cerrar el servidor.</p>
-      <div class="login-note"><span class="status-dot"></span><span id="loginStatus">Comprobando el servicio…</span></div>
-    </form></div>
+
+    <div class="login-main">
+      <form id="loginForm" class="login-form" novalidate>
+        <h2>Iniciar sesión</h2>
+        <p class="muted">Ingresa con tu cuenta de equipo para revisar el riesgo de tu cartera.</p>
+        <div class="field">
+          <label for="loginEmail">Correo electrónico</label>
+          <input id="loginEmail" name="email" type="email" autocomplete="username" required value="admin@fugacliente.local">
+        </div>
+        <div class="field">
+          <label for="loginPassword">Contraseña</label>
+          <div class="input-affix">
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required placeholder="Mínimo 12 caracteres">
+            <button type="button" class="affix-btn" id="togglePassword" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+          </div>
+        </div>
+        <p id="loginError" class="form-error" role="alert"></p>
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Entrar al panel</button>
+        <div id="demoHint" class="callout" hidden>
+          <strong>Modo demostración</strong>
+          <span>Contraseña: <code>FugaCliente2026!</code> · También puedes entrar como <button type="button" class="link-btn" data-demo-user="carla.analista@fugacliente.local">analista</button> o <button type="button" class="link-btn" data-demo-user="jorge.agente@fugacliente.local">agente</button>. Los datos se reinician al detener el servidor.</span>
+        </div>
+        <div class="service-status"><span id="serviceDot" class="dot dot-pending"></span><span id="loginStatus">Comprobando el servicio…</span></div>
+      </form>
+    </div>
   </section>
-  <div id="application" class="app-layout" hidden>
-    <aside class="sidebar"><a href="#overview" class="brand"><span class="brand-mark">f.</span> FugaCliente</a>
-      <p class="sidebar-label">ESPACIO DE TRABAJO</p>
-      <nav aria-label="Navegación principal">
-        <button class="nav-item active" data-view="overview"><span aria-hidden="true">◫</span> Vista general</button>
-        <button class="nav-item" data-view="clients"><span aria-hidden="true">◎</span> Clientes</button>
-        <button class="nav-item" data-view="incidents"><span aria-hidden="true">⚑</span> Incidencias</button>
-        <button class="nav-item" data-view="actions"><span aria-hidden="true">✓</span> Retención</button>
-        <button class="nav-item" data-view="services"><span aria-hidden="true">▦</span> Servicios y equipo</button>
-        <button class="nav-item" data-view="logs" data-privileged><span aria-hidden="true">≡</span> Actividad</button>
+
+  <!-- ============ Aplicación ============ -->
+  <div id="application" class="shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <a href="#/panel" class="brand brand-light">
+        <img src="/favicon.svg" alt="" width="34" height="34">
+        <span class="brand-text"><strong>FugaCliente</strong><small>Riesgo y retención</small></span>
+      </a>
+      <nav class="nav" aria-label="Navegación principal">
+        <p class="nav-group">Operación</p>
+        <a class="nav-link" href="#/panel" data-route="panel"><svg class="icon"><use href="#i-grid"/></svg>Panel</a>
+        <a class="nav-link" href="#/clientes" data-route="clientes"><svg class="icon"><use href="#i-users"/></svg>Clientes<span class="nav-count" id="navAlerts" hidden></span></a>
+        <a class="nav-link" href="#/incidencias" data-route="incidencias"><svg class="icon"><use href="#i-alert"/></svg>Incidencias</a>
+        <a class="nav-link" href="#/retencion" data-route="retencion"><svg class="icon"><use href="#i-buoy"/></svg>Retención</a>
+        <p class="nav-group">Organización</p>
+        <a class="nav-link" href="#/equipo" data-route="equipo"><svg class="icon"><use href="#i-badge"/></svg>Equipo y servicios</a>
+        <a class="nav-link" href="#/auditoria" data-route="auditoria" data-privileged><svg class="icon"><use href="#i-activity"/></svg>Auditoría</a>
+        <a class="nav-link" href="/docs.html" target="_blank" rel="noopener"><svg class="icon"><use href="#i-book"/></svg>Documentación API</a>
       </nav>
-      <div class="sidebar-bottom"><div class="sidebar-help"><span class="status-dot"></span><strong>Todo empieza escuchando</strong><p>Cada seguimiento es una oportunidad para mejorar.</p></div>
-      <div class="profile"><span id="userAvatar" class="avatar">A</span><div><strong id="userName"></strong><small id="userRole"></small></div><button id="logoutButton" class="icon-button" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button></div></div>
+      <div class="sidebar-foot">
+        <div class="env-card">
+          <svg class="icon"><use href="#i-server"/></svg>
+          <div><strong id="modeLabel">—</strong><small id="modeDetail">—</small></div>
+        </div>
+        <div class="profile">
+          <span id="userAvatar" class="avatar avatar-on-dark">—</span>
+          <div class="profile-text"><strong id="userName"></strong><small id="userRole"></small></div>
+          <button id="logoutButton" class="icon-btn icon-btn-dark" type="button" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="icon"><use href="#i-logout"/></svg></button>
+        </div>
+      </div>
     </aside>
-    <div class="main-shell"><header class="topbar"><span id="breadcrumb">Espacio de trabajo / Vista general</span><div class="topbar-right"><span id="modePill" class="mode-pill"></span><button id="refreshButton" class="icon-button" title="Actualizar datos" aria-label="Actualizar datos">↻</button><button id="mobileLogoutButton" class="icon-button mobile-only" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button></div></header>
-      <main id="mainContent" tabindex="-1"></main><footer class="main-footer">FugaCliente <span>El puntaje orienta la atención; no representa una probabilidad de abandono.</span></footer>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuButton" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false"><svg class="icon"><use href="#i-menu"/></svg></button>
+        <div class="topbar-title"><span id="crumb">Panel</span></div>
+        <div class="global-search" role="search">
+          <svg class="icon"><use href="#i-search"/></svg>
+          <input id="globalSearch" type="search" placeholder="Buscar cliente por nombre o correo" aria-label="Buscar cliente" autocomplete="off">
+          <kbd>/</kbd>
+          <div id="searchResults" class="search-results" role="listbox" hidden></div>
+        </div>
+        <div class="topbar-actions">
+          <button id="themeButton" class="icon-btn" type="button" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro"><svg class="icon"><use href="#i-moon"/></svg></button>
+          <button id="refreshButton" class="icon-btn" type="button" aria-label="Actualizar datos" title="Actualizar datos"><svg class="icon"><use href="#i-refresh"/></svg></button>
+        </div>
+      </header>
+      <main id="mainContent" class="content" tabindex="-1"></main>
+      <footer class="footer">
+        <span>FugaCliente 2.0</span>
+        <span>El puntaje prioriza la atención según reglas explicables; no es una probabilidad estadística de abandono.</span>
+      </footer>
     </div>
   </div>
-  <dialog id="modal"><div class="modal-head"><h2 id="modalTitle"></h2><button id="closeModal" class="icon-button" aria-label="Cerrar ventana">×</button></div><div id="modalContent"></div></dialog>
-  <div id="toast" class="toast" role="status" hidden></div>
+
+  <dialog id="modal" class="modal" aria-labelledby="modalTitle">
+    <header class="modal-head"><h2 id="modalTitle"></h2><button class="icon-btn" type="button" data-close aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button></header>
+    <div id="modalBody" class="modal-body"></div>
+  </dialog>
+
+  <dialog id="drawer" class="drawer" aria-labelledby="drawerTitle">
+    <div id="drawerBody" class="drawer-body"></div>
+  </dialog>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 </body>
 </html>

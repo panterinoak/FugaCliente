@@ -1,20 +1,24 @@
 {
   "name": "fugacliente",
-  "version": "1.0.0",
-  "description": "API de detección explicable de riesgo de fuga por mal servicio con Express, SQL Server y MongoDB",
+  "version": "2.0.0",
+  "description": "Plataforma de detección explicable de clientes en riesgo de fuga por mal servicio: API REST en capas con Express, SQL Server y MongoDB, e interfaz web.",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.0.0" },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "demo": "node scripts/demo.js",
     "db:setup": "node scripts/setup-db.js",
     "db:seed": "node scripts/seed-db.js",
+    "docs:api": "node scripts/generate-api-docs.js",
     "test": "node --test tests/*.test.js",
     "test:integration": "node --test tests/integration/*.test.js",
     "check": "node scripts/check.js",
-    "doctor": "node scripts/doctor.js"
+    "doctor": "node scripts/doctor.js",
+    "verify": "npm run check && npm test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -27,5 +31,16 @@
     "mssql": "^12.0.0",
     "zod": "^3.25.76"
   },
-  "devDependencies": { "supertest": "^7.1.4" }
+  "devDependencies": {
+    "supertest": "^7.1.4"
+  },
+  "keywords": [
+    "express",
+    "sql-server",
+    "mongodb",
+    "rest",
+    "churn",
+    "retention",
+    "outbox"
+  ]
 }

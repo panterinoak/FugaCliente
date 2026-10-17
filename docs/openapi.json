@@ -2,13 +2,17 @@
   "openapi": "3.0.3",
   "info": {
     "title": "FugaCliente API",
-    "version": "1.0.0",
-    "description": "Evaluación parcial de backend. SQL Server para transacciones y MongoDB para auditoría y comentarios. Fechas ISO 8601 en UTC. Todos los recursos de negocio requieren Bearer JWT."
+    "version": "2.0.0",
+    "description": "Evaluación parcial de backend. Arquitectura en capas (rutas → controladores → servicios → repositorios). SQL Server para transacciones y MongoDB para auditoría y comentarios. Fechas ISO 8601 en UTC. Todos los recursos de negocio requieren Bearer JWT."
   },
   "servers": [
     {
-      "url": "http://localhost:3000/api",
-      "description": "Entorno local"
+      "url": "/api/v1",
+      "description": "API versionada (recomendada)"
+    },
+    {
+      "url": "/api",
+      "description": "Alias compatible con la versión 1"
     }
   ],
   "security": [
@@ -17,6 +21,43 @@
     }
   ],
   "paths": {
+    "/": {
+      "get": {
+        "summary": "Índice del API",
+        "description": "",
+        "tags": [
+          "Sistema"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Operación correcta. Cuerpo data y pagination cuando corresponde."
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Rol sin permiso"
+          },
+          "404": {
+            "description": "Recurso inexistente"
+          },
+          "409": {
+            "description": "Duplicado, relación o versión en conflicto"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Estado de SQL Server, MongoDB y outbox",
@@ -265,6 +306,61 @@
             "description": "Duplicado, relación o versión en conflicto"
           }
         }
+      },
+      "patch": {
+        "summary": "Cambiar nombre, rol o acceso de un usuario",
+        "description": "Solo administrador. No puede cambiar su propio rol ni desactivarse; siempre queda al menos un administrador activo.",
+        "tags": [
+          "Usuarios"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operación correcta. Cuerpo data y pagination cuando corresponde."
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Rol sin permiso"
+          },
+          "404": {
+            "description": "Recurso inexistente"
+          },
+          "409": {
+            "description": "Duplicado, relación o versión en conflicto"
+          }
+        }
       }
     },
     "/catalogs": {
@@ -357,6 +453,108 @@
         "responses": {
           "201": {
             "description": "Recurso creado. Encabezado Location disponible."
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Rol sin permiso"
+          },
+          "404": {
+            "description": "Recurso inexistente"
+          },
+          "409": {
+            "description": "Duplicado, relación o versión en conflicto"
+          }
+        }
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "summary": "Consultar servicio",
+        "description": "",
+        "tags": [
+          "Servicios"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación correcta. Cuerpo data y pagination cuando corresponde."
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Rol sin permiso"
+          },
+          "404": {
+            "description": "Recurso inexistente"
+          },
+          "409": {
+            "description": "Duplicado, relación o versión en conflicto"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Actualizar SLA, nombre o estado del servicio",
+        "description": "Solo administrador.",
+        "tags": [
+          "Servicios"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operación correcta. Cuerpo data y pagination cuando corresponde."
           },
           "400": {
             "description": "Entrada inválida",
@@ -1293,7 +1491,7 @@
     },
     "/dashboard": {
       "get": {
-        "summary": "Indicadores y cinco clientes prioritarios",
+        "summary": "Indicadores, prioridad, tendencia semanal, motivos, carga por servicio y retención",
         "description": "",
         "tags": [
           "Riesgo"
@@ -1407,7 +1605,7 @@
     "/logs": {
       "get": {
         "summary": "Consultar auditoría BSON",
-        "description": "Administrador o analista. Eventos de negocio y logs HTTP.",
+        "description": "Administrador o analista. Eventos de negocio (outbox) y logs HTTP.",
         "tags": [
           "Auditoría"
         ],
@@ -1437,6 +1635,126 @@
             "schema": {
               "type": "integer",
               "minimum": 1
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "business",
+                "http"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación correcta. Cuerpo data y pagination cuando corresponde."
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Rol sin permiso"
+          },
+          "404": {
+            "description": "Recurso inexistente"
+          },
+          "409": {
+            "description": "Duplicado, relación o versión en conflicto"
+          }
+        }
+      }
+    },
+    "/logs/summary": {
+      "get": {
+        "summary": "Resumen agregado de auditoría (MongoDB $facet)",
+        "description": "Eventos por tipo, actividad de negocio por día y métricas HTTP (total, errores, latencia media).",
+        "tags": [
+          "Auditoría"
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 14
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación correcta. Cuerpo data y pagination cuando corresponde."
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida"
+          },
+          "403": {
+            "description": "Rol sin permiso"
+          },
+          "404": {
+            "description": "Recurso inexistente"
+          },
+          "409": {
+            "description": "Duplicado, relación o versión en conflicto"
+          }
+        }
+      }
+    },
+    "/reports/clients.csv": {
+      "get": {
+        "summary": "Exportar clientes con riesgo a CSV",
+        "description": "Administrador o analista. text/csv UTF-8 con BOM; protege contra inyección de fórmulas. Encabezado X-Total-Count.",
+        "tags": [
+          "Reportes"
+        ],
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "bajo",
+                "medio",
+                "alto"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activo",
+                "inactivo"
+              ]
             }
           }
         ],
@@ -1552,6 +1870,51 @@
             "maximum": 720
           }
         }
+      },
+      "ServiceUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "slaHours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "minProperties": 1
+      },
+      "UserUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "analista",
+              "agente"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "minProperties": 1
       },
       "ClientCreate": {
         "type": "object",

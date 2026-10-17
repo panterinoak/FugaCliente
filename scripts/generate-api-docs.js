@@ -19,6 +19,7 @@ function route(path, method, summary, tag, { schema, code = 200, parameters = []
     ...(parameters.length ? { parameters } : {}), ...(schema ? { requestBody: { required: true, content: json(ref(schema)) } } : {}),
     responses: { [code]: success(code === 201 ? 'Recurso creado. Encabezado Location disponible.' : code === 204 ? 'Cliente archivado. Sin cuerpo.' : 'Operación correcta. Cuerpo data y pagination cuando corresponde.'), ...errors } };
 }
+route('/', 'get', 'Índice del API', 'Sistema', { publicRoute: true });
 route('/health', 'get', 'Estado de SQL Server, MongoDB y outbox', 'Sistema', { publicRoute: true, description: '200 si ambos responden; 503 si alguna base no está disponible. En demo se indica explícitamente memoria temporal.' });
 paths['/health'].get.responses['503'] = { description: 'Dependencia no disponible' };
 route('/auth/login', 'post', 'Obtener JWT', 'Autenticación', { publicRoute: true, schema: 'Login', description: '20 intentos por 15 minutos por IP. Devuelve data.token, data.user y data.expiresIn.' });
@@ -26,9 +27,12 @@ route('/users/me', 'get', 'Perfil de la sesión', 'Usuarios');
 route('/users', 'get', 'Listar usuarios sin hashes de contraseña', 'Usuarios');
 route('/users', 'post', 'Crear usuario con rol', 'Usuarios', { schema: 'UserCreate', code: 201, description: 'Solo administrador.' });
 route('/users/{id}', 'get', 'Consultar usuario', 'Usuarios', { parameters: [idParameter] });
+route('/users/{id}', 'patch', 'Cambiar nombre, rol o acceso de un usuario', 'Usuarios', { schema: 'UserUpdate', parameters: [idParameter], description: 'Solo administrador. No puede cambiar su propio rol ni desactivarse; siempre queda al menos un administrador activo.' });
 route('/catalogs', 'get', 'Roles, segmentos, servicios y categorías', 'Catálogos');
 route('/services', 'get', 'Listar servicios y SLA', 'Servicios');
 route('/services', 'post', 'Crear servicio', 'Servicios', { schema: 'ServiceCreate', code: 201, description: 'Solo administrador.' });
+route('/services/{id}', 'get', 'Consultar servicio', 'Servicios', { parameters: [idParameter] });
+route('/services/{id}', 'patch', 'Actualizar SLA, nombre o estado del servicio', 'Servicios', { schema: 'ServiceUpdate', parameters: [idParameter], description: 'Solo administrador.' });
 route('/clients', 'get', 'Listar clientes con riesgo calculado', 'Clientes', { parameters: [...pageParameters, searchParameter, levelParameter, statusParameter(['activo', 'inactivo'])] });
 route('/clients', 'post', 'Registrar cliente', 'Clientes', { schema: 'ClientCreate', code: 201 });
 route('/clients/{id}', 'get', 'Consultar cliente', 'Clientes', { parameters: [idParameter] });
@@ -45,19 +49,23 @@ route('/retention-actions', 'get', 'Listar acciones de retención', 'Retención'
 route('/retention-actions', 'post', 'Asignar acción y fecha límite', 'Retención', { schema: 'ActionCreate', code: 201 });
 route('/retention-actions/{id}', 'get', 'Consultar acción', 'Retención', { parameters: [idParameter] });
 route('/retention-actions/{id}', 'patch', 'Completar acción con resultado', 'Retención', { parameters: [idParameter], schema: 'ActionUpdate', description: 'Repetir el mismo resultado es idempotente; cambiar uno ya confirmado devuelve 409.' });
-route('/dashboard', 'get', 'Indicadores y cinco clientes prioritarios', 'Riesgo');
+route('/dashboard', 'get', 'Indicadores, prioridad, tendencia semanal, motivos, carga por servicio y retención', 'Riesgo');
 route('/alerts', 'get', 'Clientes activos con puntaje desde 40', 'Riesgo', { parameters: [...pageParameters, searchParameter, levelParameter] });
-route('/logs', 'get', 'Consultar auditoría BSON', 'Auditoría', { parameters: [...pageParameters, clientParameter], description: 'Administrador o analista. Eventos de negocio y logs HTTP.' });
+route('/logs', 'get', 'Consultar auditoría BSON', 'Auditoría', { parameters: [...pageParameters, clientParameter, { name: 'kind', in: 'query', schema: { type: 'string', enum: ['business', 'http'] } }], description: 'Administrador o analista. Eventos de negocio (outbox) y logs HTTP.' });
+route('/logs/summary', 'get', 'Resumen agregado de auditoría (MongoDB $facet)', 'Auditoría', { parameters: [{ name: 'days', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 90, default: 14 } }], description: 'Eventos por tipo, actividad de negocio por día y métricas HTTP (total, errores, latencia media).' });
+route('/reports/clients.csv', 'get', 'Exportar clientes con riesgo a CSV', 'Reportes', { parameters: [levelParameter, statusParameter(['activo', 'inactivo'])], description: 'Administrador o analista. text/csv UTF-8 con BOM; protege contra inyección de fórmulas. Encabezado X-Total-Count.' });
 const object = (properties, required = Object.keys(properties)) => ({ type: 'object', additionalProperties: false, required, properties });
 const text = (min, max) => field('string', { minLength: min, maxLength: max });
 const nullableId = { ...id, nullable: true };
 const clientProperties = { name: text(2, 150), email: field('string', { format: 'email', maxLength: 254 }), phone: field('string', { nullable: true, pattern: '^[+0-9 ()-]{6,25}$' }), segmentId: id, status: field('string', { enum: ['activo', 'inactivo'], default: 'activo' }) };
-const openapi = { openapi: '3.0.3', info: { title: 'FugaCliente API', version: '1.0.0', description: 'Evaluación parcial de backend. SQL Server para transacciones y MongoDB para auditoría y comentarios. Fechas ISO 8601 en UTC. Todos los recursos de negocio requieren Bearer JWT.' },
-  servers: [{ url: 'http://localhost:3000/api', description: 'Entorno local' }], security: [{ bearerAuth: [] }], paths,
+const openapi = { openapi: '3.0.3', info: { title: 'FugaCliente API', version: '2.0.0', description: 'Evaluación parcial de backend. Arquitectura en capas (rutas → controladores → servicios → repositorios). SQL Server para transacciones y MongoDB para auditoría y comentarios. Fechas ISO 8601 en UTC. Todos los recursos de negocio requieren Bearer JWT.' },
+  servers: [{ url: '/api/v1', description: 'API versionada (recomendada)' }, { url: '/api', description: 'Alias compatible con la versión 1' }], security: [{ bearerAuth: [] }], paths,
   components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: {
     Login: object({ email: field('string', { format: 'email' }), password: text(1, 72) }),
     UserCreate: object({ name: text(2, 100), email: field('string', { format: 'email' }), password: { ...text(12, 72), description: 'Máximo 72 bytes UTF-8 para evitar truncado de bcrypt.' }, role: field('string', { enum: ['admin', 'analista', 'agente'] }) }),
     ServiceCreate: object({ name: text(2, 100), slaHours: field('integer', { minimum: 1, maximum: 720 }) }),
+    ServiceUpdate: { ...object({ name: text(2, 100), slaHours: field('integer', { minimum: 1, maximum: 720 }), active: field('boolean') }, []), minProperties: 1 },
+    UserUpdate: { ...object({ name: text(2, 100), role: field('string', { enum: ['admin', 'analista', 'agente'] }), active: field('boolean') }, []), minProperties: 1 },
     ClientCreate: object(clientProperties, ['name', 'email', 'segmentId']), ClientUpdate: { ...object(clientProperties, []), minProperties: 1 },
     IncidentCreate: object({ clientId: id, serviceId: id, categoryId: id, description: text(10, 2000), severity: field('integer', { minimum: 1, maximum: 3 }), satisfaction: field('integer', { minimum: 1, maximum: 5, nullable: true }), assignedUserId: nullableId }, ['clientId', 'serviceId', 'categoryId', 'description', 'severity']),
     IncidentUpdate: object({ status: field('string', { enum: ['abierta', 'en_proceso', 'resuelta'] }), expectedVersion: id }),
@@ -77,8 +85,8 @@ function item(name, method, path, body, script) {
 }
 const testStatus = code => [`pm.test('HTTP ${code}', () => pm.response.to.have.status(${code}));`];
 const save = (name, prop = 'id') => [`if (pm.response.code < 300) pm.collectionVariables.set('${name}', pm.response.json().data.${prop});`];
-const collection = { info: { name: 'FugaCliente · Evaluación Parcial', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json', description: 'Ejecuta en orden: login, catálogos, crear cliente, crear incidencia, actualizar estado y crear seguimiento. Configura email/password para tu .env. JWT e IDs se guardan automáticamente.' },
-  variable: [{ key: 'baseUrl', value: 'http://localhost:3000/api' }, { key: 'email', value: 'admin@fugacliente.local' }, { key: 'password', value: 'FugaCliente2026!' }, { key: 'token', value: '' }, { key: 'clientId', value: '' }, { key: 'incidentId', value: '' }, { key: 'actionId', value: '' }, { key: 'userId', value: '1' }, { key: 'segmentId', value: '1' }, { key: 'serviceId', value: '1' }, { key: 'categoryId', value: '1' }, { key: 'version', value: '1' }],
+const collection = { info: { name: 'FugaCliente 2.0 · Evaluación Parcial', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json', description: 'Ejecuta en orden: login, catálogos, crear cliente, crear incidencia, actualizar estado y crear seguimiento. Configura email/password para tu .env. JWT e IDs se guardan automáticamente.' },
+  variable: [{ key: 'baseUrl', value: 'http://localhost:3000/api/v1' }, { key: 'email', value: 'admin@fugacliente.local' }, { key: 'password', value: 'FugaCliente2026!' }, { key: 'token', value: '' }, { key: 'clientId', value: '' }, { key: 'incidentId', value: '' }, { key: 'actionId', value: '' }, { key: 'userId', value: '1' }, { key: 'segmentId', value: '1' }, { key: 'serviceId', value: '1' }, { key: 'categoryId', value: '1' }, { key: 'version', value: '1' }],
   auth: { type: 'bearer', bearer: [{ key: 'token', value: '{{token}}', type: 'string' }] },
   item: [
     item('01 · Salud de las bases', 'GET', '/health', null, testStatus(200)),
@@ -100,7 +108,10 @@ const collection = { info: { name: 'FugaCliente · Evaluación Parcial', schema:
     item('17 · Auditoría del cliente', 'GET', '/logs?clientId={{clientId}}', null, testStatus(200)),
     item('18 · Validación inválida', 'POST', '/clients', { name: 'A', email: 'no-es-correo', segmentId: '{{segmentId}}' }, testStatus(400)),
     item('19 · Versión obsoleta', 'PATCH', '/incidents/{{incidentId}}', { status: 'en_proceso', expectedVersion: 1 }, testStatus(409)),
-    item('20 · Archivar cliente', 'DELETE', '/clients/{{clientId}}', null, testStatus(204))
+    item('20 · Archivar cliente', 'DELETE', '/clients/{{clientId}}', null, testStatus(204)),
+    item('21 · Resumen de auditoría (agregación)', 'GET', '/logs/summary?days=30', null, testStatus(200)),
+    item('22 · Exportar clientes CSV', 'GET', '/reports/clients.csv?status=activo', null, testStatus(200)),
+    item('23 · Actualizar SLA del servicio', 'PATCH', '/services/{{serviceId}}', { slaHours: 24 }, testStatus(200))
   ]
 };
 collection.item[10].event.unshift({ listen: 'prerequest', script: { type: 'text/javascript', exec: ["pm.collectionVariables.set('dueAt', new Date(Date.now()+86400000).toISOString());"] } });

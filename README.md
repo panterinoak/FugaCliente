@@ -1,254 +1,219 @@
-# FugaCliente
+<p align="center"><img src="public/icons/icon-192.png" width="88" alt="FugaCliente"></p>
 
-Sistema de detección de clientes en riesgo de abandonar una empresa por experiencias de mal servicio. Proyecto para la **Evaluación Parcial de Desarrollo Web Full Stack Backend**.
+<h1 align="center">FugaCliente 2.0</h1>
+<p align="center"><b>Detección explicable de clientes en riesgo de abandono por mal servicio</b><br>
+API REST en capas con Express 5 · SQL Server · MongoDB · interfaz web sin dependencias externas</p>
 
-La aplicación permite registrar clientes, documentar incidencias, calcular un puntaje explicable de riesgo y asignar acciones de retención. **SQL Server** conserva los datos transaccionales; **MongoDB** conserva comentarios y eventos BSON. Una interfaz oscura consume el API real mediante `fetch`.
+---
+
+FugaCliente reúne las incidencias de atención de cada cliente, calcula un **puntaje de riesgo de 0 a 100 que explica sus causas** y permite coordinar **acciones de retención** con responsable, fecha límite y resultado. Proyecto para la **Evaluación Parcial de Desarrollo Web Full Stack Backend**.
+
+- **SQL Server** es la fuente de verdad: tablas normalizadas, procedimientos almacenados transaccionales, vistas, triggers e índices.
+- **MongoDB** guarda la auditoría y los comentarios como documentos BSON, con validadores `$jsonSchema`, índices, TTL y agregaciones.
+- El **patrón Transactional Outbox** conecta ambas bases sin perder eventos aunque MongoDB no esté disponible.
+
+![Arquitectura](docs/arquitectura.png)
 
 ## Empezar en dos comandos
 
-Requisitos: **Node.js 22 o 24 LTS** y una terminal abierta en esta carpeta, donde está `package.json`.
+Requisitos: **Node.js 22 o 24 LTS** y una terminal abierta en esta carpeta (donde está `package.json`).
 
 ```bash
 npm ci
 npm run demo
 ```
 
-Abre **http://localhost:3000**. Correo: `admin@fugacliente.local`. Contraseña: `FugaCliente2026!`.
+Abre **http://localhost:3000** y entra con:
 
-Esta opción es una **demo temporal en memoria**: sirve para conocer el funcionamiento, no demuestra la persistencia SQL/NoSQL de la rúbrica. Los cambios se reinician al detener el servidor. Para la evaluación utiliza el modo completo que se explica a continuación.
-
-## Ejecutar con SQL Server y MongoDB
-
-Necesitas SQL Server 2022 o superior y MongoDB 8.0, o Docker Desktop con contenedores Linux para usar la configuración incluida. SQL Server necesita una máquina x86-64 compatible; si tu equipo es ARM, utiliza un servidor SQL remoto compatible. Docker debe estar abierto antes de ejecutar sus comandos.
-
-1. Instala las dependencias con `npm ci` si todavía no lo hiciste.
-2. Copia `.env.example` como `.env`.
-
-En **PowerShell de Windows**:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-En **macOS/Linux**:
-
-```bash
-cp .env.example .env
-```
-
-3. Mantén `DB_MODE=sqlmongo`. Cambia `JWT_SECRET` por un valor aleatorio. Puedes generar uno con:
-
-```bash
-node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
-```
-
-4. Si usas Docker, inicia las bases. `SQL_PASSWORD` de `.env` también se usa como contraseña del contenedor SQL. Los valores iniciales son para laboratorio local.
-
-```bash
-docker compose up -d --wait
-```
-
-5. Prepara el esquema, sus procedimientos, el administrador y las colecciones de MongoDB; carga ejemplos ficticios y verifica la conexión:
-
-```bash
-npm run db:setup
-npm run db:seed
-npm run doctor
-npm run dev
-```
-
-6. Abre **http://localhost:3000**. Inicia sesión con `ADMIN_EMAIL` y `ADMIN_PASSWORD` de `.env`. `db:setup` crea el administrador si no existe y no cambia la contraseña de uno ya creado.
-
-Si tus bases ya están instaladas o son remotas, omite el comando Docker y configura `SQL_HOST`, `SQL_PORT`, `SQL_USER`, `SQL_PASSWORD`, `SQL_DATABASE`, `MONGO_URI` y `MONGO_DATABASE`. Para SQL remoto con un certificado válido, utiliza `SQL_ENCRYPT=true` y `SQL_TRUST_CERT=false`. Si usas una instancia nombrada, define su puerto TCP explícito. La cuenta usada en `db:setup` debe poder crear la base; para la ejecución habitual usa una cuenta con permisos limitados.
-
-`npm start` inicia sin recarga; `npm run dev` vuelve a cargar cuando cambia el código. Para detener la aplicación presiona `Ctrl+C`. `docker compose stop` detiene los contenedores y conserva sus volúmenes.
-
-## Adaptación del caso del PDF
-
-El PDF utiliza coworking como caso de ejemplo; el tema elegido en la imagen es **FugaCliente**. Se mantienen sus requisitos técnicos y se adaptan los recursos al negocio de atención al cliente.
-
-| Caso de ejemplo del PDF | Aplicación en FugaCliente |
-|---|---|
-| Usuarios | Usuarios y roles de administrador, analista y agente |
-| Salas como recurso administrable | Servicios con plazo de atención o SLA |
-| Reservas como operación transaccional | Registro de incidencias de servicio |
-| Stored procedure para registrar reserva | `dbo.sp_RegisterIncident` con transacción, comprobaciones y rollback |
-| Logs y comentarios en MongoDB | Colecciones BSON `events` y `comments` |
-
-## Requisitos y evidencia de implementación
-
-| Requisito del PDF | Implementación | Archivo o prueba para mostrar |
+| Rol | Correo | Contraseña |
 |---|---|---|
-| Entorno profesional | Variables verificadas, secretos por entorno, scripts npm y lockfile | `.env.example`, `src/config/env.js`, `package.json` |
-| Express con Router | Routers separados por recurso | `src/app.js`, `src/routes/` |
-| Middleware de logging | Método, ruta, estado, duración e ID de petición | `src/middlewares/logging.js` y `GET /api/logs` |
-| Validación de entradas | Esquemas Zod y rechazo de campos desconocidos | `src/middlewares/validation.js` |
-| Errores globales | JSON uniforme y traducción de errores SQL | `src/utils/errors.js` |
-| SQL Server e integridad | PK, FK, UNIQUE, CHECK, catálogos e índices | `database/schema.sql` |
-| Stored procedure | Incidencia y evento confirmados en una transacción | `dbo.sp_RegisterIncident` |
-| MongoDB BSON | Eventos flexibles con campos comunes, comentarios, índices y TTL | `src/repositories/mongo.js` |
-| REST Richardson nivel 2 | Recursos, verbos GET/POST/PATCH/DELETE y estados HTTP | `docs/API.md` y `docs/openapi.json` |
-| Documentación | README, OpenAPI y colección de Postman con ejemplos y pruebas | `docs/` |
-| Entrega comprimida | Código, SQL y `.env.example`, sin `node_modules` ni secretos | ZIP de entrega |
+| Administrador | `admin@fugacliente.local` | `FugaCliente2026!` |
+| Analista | `carla.analista@fugacliente.local` | `FugaCliente2026!` |
+| Agente | `jorge.agente@fugacliente.local` | `FugaCliente2026!` |
 
-Los cuatro criterios de la rúbrica son arquitectura de servidor, persistencia SQL, diseño REST y persistencia NoSQL, cada uno con hasta 5 puntos. La matriz ayuda a demostrar cada criterio; la calificación depende de la ejecución y la sustentación ante el docente.
+La demo usa **memoria temporal** con 14 clientes y 30 incidencias ficticias repartidas en 8 semanas. Sirve para conocer la aplicación; **no demuestra la persistencia SQL/NoSQL de la rúbrica**. Para la evaluación usa el modo completo.
 
-## Funciones del sistema
+## Modo completo: SQL Server + MongoDB
 
-- Autenticación JWT y contraseñas almacenadas como hashes bcrypt.
-- Gestión de clientes, búsqueda, filtros, paginación y archivo lógico.
-- Registro de incidencias con servicio, categoría, gravedad, satisfacción y responsable.
-- Transiciones de estado con control de versión para evitar que una actualización sobrescriba otra.
-- Puntaje de riesgo de 0 a 100 con sus causas visibles.
-- Alertas de riesgo medio o alto y resumen de clientes prioritarios.
-- Acciones de retención con responsable, fecha futura y resultado.
-- Comentarios con autor, fecha y canal guardados en MongoDB.
-- Auditoría de eventos de negocio y de peticiones HTTP.
-- Interfaz adaptable a computadoras y celulares, sin servicios externos de diseño.
+Necesitas SQL Server 2022+ y MongoDB 8.0, o Docker Desktop para usar `docker-compose.yml`. SQL Server requiere un equipo x86-64; en ARM usa un servidor remoto.
 
-## Regla de detección
+1. `npm ci`
+2. Copia la configuración: `Copy-Item .env.example .env` (PowerShell) o `cp .env.example .env` (macOS/Linux).
+3. Mantén `DB_MODE=sqlmongo` y cambia `JWT_SECRET` por un valor aleatorio:
+   ```bash
+   node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
+   ```
+4. Inicia las bases (la contraseña del contenedor SQL es `SQL_PASSWORD` de `.env`):
+   ```bash
+   docker compose up -d --wait
+   ```
+5. Prepara el esquema, carga datos ficticios, diagnostica y arranca:
+   ```bash
+   npm run db:setup     # tablas, procedimientos, vistas, triggers, admin y colecciones MongoDB
+   npm run db:seed      # datos ficticios + usuarios analista y agente
+   npm run doctor       # verifica conexiones, 5 procedimientos y 3 vistas
+   npm run dev
+   ```
+6. Abre **http://localhost:3000**. `GET /api/health` debe indicar `mode: sqlmongo`, `sql: ok` y `mongo: ok`.
 
-El sistema usa reglas de negocio propuestas para este proyecto. **El puntaje no es una probabilidad estadística de abandono ni un modelo de IA entrenado.** Su objetivo es priorizar la atención y explicar qué señales justifican esa prioridad.
+Si tus bases ya existen o son remotas, omite Docker y configura `SQL_HOST`, `SQL_PORT`, `SQL_USER`, `SQL_PASSWORD`, `SQL_DATABASE`, `MONGO_URI` y `MONGO_DATABASE`. Con certificado válido usa `SQL_ENCRYPT=true` y `SQL_TRUST_CERT=false`. **Si actualizas desde la versión 1, vuelve a ejecutar `npm run db:setup`**: el script es idempotente y crea las vistas nuevas sin borrar datos.
 
-| Factor | Regla | Máximo |
-|---|---|---:|
-| Satisfacción | Última calificación en 30 días: 1 o 2 suma 25; 3 suma 10; 4 o 5 suma 0 | 25 |
-| Pendientes | Cada incidencia abierta o en proceso suma 10, sin límite de antigüedad | 30 |
-| Repetición | Desde la segunda incidencia en 30 días, cada adicional suma 10 | 20 |
-| Gravedad | Al menos una incidencia de gravedad 3 en 30 días suma 15 | 15 |
-| SLA vencido | Al menos una incidencia pendiente supera las horas del servicio | 10 |
-| **Total** | Suma de factores con topes individuales | **100** |
+También puedes ejecutar la aplicación en un contenedor (después de `db:setup`): `docker compose --profile app up -d --build`.
 
-**Bajo:** 0-39. **Medio:** 40-69. **Alto:** 70-100. Una sola incidencia reciente grave con satisfacción 1 y sin SLA vencido suma 50; si se resuelve baja a 40. Su historial reciente conserva el efecto de gravedad y satisfacción. Registrar una acción como “recuperado” documenta un resultado, pero no altera artificialmente el puntaje.
+## Qué incluye
 
-La ventana se calcula en UTC e incluye su límite exacto de 30 días. Incidencias fechadas en el futuro no se consideran. La fecha se asigna en el servidor; el API público no permite que el cliente envíe una fecha de creación arbitraria.
+| Área | Funcionalidad |
+|---|---|
+| Clientes | Alta, edición, archivo lógico, búsqueda sin tildes, filtros por nivel y estado, exportación CSV |
+| Riesgo | Puntaje 0–100 con 5 factores visibles, recomendación, alertas y cola de prioridad |
+| Incidencias | Registro transaccional (SP), máquina de estados, control de versión (409), estado de SLA |
+| Retención | Acciones con responsable y fecha, detección de vencidas, resultado inmutable, tasa de recuperación |
+| Panel | KPIs, distribución, tendencia de 8 semanas, motivos, carga por servicio, factores que explican el riesgo |
+| Equipo | Usuarios con roles (admin, analista, agente), habilitar/deshabilitar, edición de SLA por servicio |
+| Auditoría | Eventos de negocio vía outbox, logs HTTP con `X-Request-Id`, resumen con agregación `$facet` |
+| Interfaz | Modo claro/oscuro, adaptable a celular, búsqueda global (`/`), panel lateral de cliente, accesible por teclado |
+| Documentación | Referencia interactiva en `/api/docs`, OpenAPI 3, Postman (23 peticiones con pruebas) |
 
 ## Arquitectura
 
-```mermaid
-flowchart TD
-  UI[Interfaz o Postman] --> API[Express y middlewares]
-  API --> R[Routers por recurso]
-  R --> S[Servicios y reglas de riesgo]
-  R --> Q[Repositorio SQL]
-  S --> Q
-  Q --> DB[(SQL Server)]
-  DB --> O[Outbox de eventos]
-  O --> W[Worker con reintentos]
-  W --> M[(MongoDB)]
-  API --> L[Logging HTTP]
-  L --> M
-  R --> C[Comentarios]
-  C --> M
+```text
+Petición HTTP
+  └─ middlewares   security (Helmet/CSP) · rate limit · logging · JSON · auth JWT · roles · validate (Zod)
+      └─ routes        src/routes/*.routes.js        → declaran endpoints y middlewares
+          └─ controllers src/controllers/*.js        → HTTP ⇄ caso de uso (200/201/204, Location)
+              └─ services   src/services/*.js        → reglas de negocio, riesgo, analítica, reportes
+                  └─ repositories src/repositories   → SqlRepository · MongoAudit · Memory*
+                      └─ SQL Server (SP, vistas, outbox) · MongoDB (events, comments)
 ```
 
-SQL Server es la fuente de los datos de negocio. Roles, segmentos, servicios y categorías evitan repetir descripciones en usuarios, clientes e incidencias. Las relaciones utilizan claves foráneas y los datos inválidos se rechazan tanto en el API como en SQL.
+- **Inyección de dependencias** en `src/container.js`: los servicios reciben los repositorios por constructor. La misma lógica corre con SQL+Mongo, con la demo en memoria y en las pruebas.
+- **Contrato común de repositorios**: `MemoryRepository` replica las reglas de los procedimientos (estados, versiones, integridad, outbox) para probar sin bases instaladas.
+- **Vocabulario de dominio único** en `src/config/constants.js` (roles, estados, transiciones), reutilizado por validación y servicios.
+- **API versionada** en `/api/v1`; `/api` se conserva como alias compatible.
+- **Outbox**: el cambio de negocio y su evento se confirman en la misma transacción SQL; `OutboxWorker` los entrega a MongoDB con upsert idempotente por `eventId`. No hay transacción distribuida: la auditoría es eventualmente consistente.
 
-Los eventos de las operaciones SQL se guardan en `AuditOutbox` dentro de la misma transacción. Un worker los envía a MongoDB y marca los ya confirmados. MongoDB tiene un índice único por `eventId`, de modo que un reintento no duplica un evento. Esto evita perder el evento de negocio si MongoDB cae después de confirmar una incidencia. **No existe una transacción distribuida entre SQL Server y MongoDB**; la auditoría de negocio llega de manera eventual.
+## Persistencia
 
-Los logs HTTP son observabilidad de mejor esfuerzo: una falla al guardarlos se reporta en la terminal y no cancela una operación ya confirmada. Los comentarios se guardan directamente en MongoDB; si esa base no responde, no se puede crear el comentario. La auditoría secundaria del comentario es de mejor esfuerzo. Los logs omiten contraseñas, tokens, cuerpos de las peticiones y parámetros de búsqueda.
+### SQL Server (`database/schema.sql`)
 
-## Permisos
+- 10 tablas en tercera forma normal: catálogos (`Roles`, `ClientSegments`, `Services`, `IncidentCategories`) separados de las entidades.
+- PK, FK, `UNIQUE` en correos, `CHECK` de gravedad, satisfacción, estados y coherencia de fechas de resolución.
+- **5 procedimientos**: `sp_QueueEvent`, `sp_RegisterIncident`, `sp_UpdateIncidentStatus`, `sp_CreateRetentionAction`, `sp_CompleteRetentionAction` con `BEGIN TRAN`, `XACT_ABORT`, bloqueo `UPDLOCK/HOLDLOCK` y `THROW`.
+- **3 vistas**: `vw_IncidentDetail` y `vw_RetentionActionDetail` (lectura del API) y `vw_ClientIncidentSummary` (reportes).
+- **Triggers** que impiden vincular una acción con la incidencia de otro cliente.
+- Índices de cobertura para historial por cliente, estado de incidencias, acciones pendientes y outbox.
 
-| Operación | Administrador | Analista | Agente |
+### MongoDB (`src/repositories/mongo.js`)
+
+- `events`: auditoría de negocio y logs HTTP con payload flexible; validador `$jsonSchema`; índices `ux_eventId` (único), `ix_entity_date`, `ix_type_date` y `ttl_occurredAt` (retención configurable).
+- `comments`: notas de seguimiento con autor, canal y fecha; índice por cliente.
+- `summary()`: pipeline `$match` + `$facet` con `$group`, `$dateToString`, `$avg` y `$cond`.
+
+## Regla de detección (reglas-v1)
+
+**El puntaje no es una probabilidad estadística ni un modelo de IA.** Prioriza la atención y explica qué señales la justifican.
+
+| Factor | Regla | Máximo |
+|---|---|---:|
+| Satisfacción | Última calificación en 30 días: 1–2 suma 25; 3 suma 10 | 25 |
+| Pendientes | 10 por cada incidencia abierta o en proceso, sin límite de antigüedad | 30 |
+| Repetición | 10 por cada incidencia adicional en 30 días, desde la segunda | 20 |
+| Gravedad | Al menos una incidencia grave (3) en 30 días | 15 |
+| SLA vencido | Alguna incidencia pendiente supera el SLA de su servicio | 10 |
+| **Total** | | **100** |
+
+**Bajo** 0–39 · **Medio** 40–69 · **Alto** 70–100. Una primera incidencia grave con satisfacción 1 suma 50; al resolverla baja a 40 porque desaparece el punto por pendiente pero se conserva el historial reciente. La ventana se calcula en UTC, incluye su límite y descarta fechas futuras.
+
+## Seguridad
+
+- Contraseñas con **bcrypt** (costo 12, máximo 72 bytes) y comparación de tiempo constante ante correos inexistentes.
+- **JWT HS256** con emisor y audiencia; en cada petición se vuelve a consultar al usuario, así que un usuario deshabilitado pierde el acceso al instante.
+- **RBAC** por rol; un administrador no puede degradarse ni deshabilitarse y siempre queda uno activo.
+- **CSP estricta** (sin scripts ni estilos externos o en línea), Helmet, `Cache-Control: no-store` en el API y límites de tasa (300/min; login 20 cada 15 min).
+- Plantillas HTML con escape automático en la interfaz (`public/js/core/html.js`); CSV protegido contra inyección de fórmulas.
+- Los logs nunca guardan contraseñas, tokens, cuerpos ni parámetros de búsqueda.
+
+| Operación | Admin | Analista | Agente |
 |---|:---:|:---:|:---:|
-| Ver clientes, riesgo, casos, acciones y catálogos | Sí | Sí | Sí |
-| Registrar clientes, incidencias, comentarios y acciones | Sí | Sí | Sí |
-| Actualizar estado de incidencias y resultado de acciones | Sí | Sí | Sí |
-| Editar datos de clientes | Sí | Sí | No |
-| Archivar con DELETE | Sí | No | No |
-| Consultar auditoría | Sí | Sí | No |
-| Crear usuarios y servicios | Sí | No | No |
-
-La sesión expira según `JWT_EXPIRES_IN`. El servidor comprueba la existencia, actividad y rol del usuario en cada petición. El navegador guarda el token en `sessionStorage` y lo elimina al cerrar sesión. La interfaz escapa los textos de clientes y comentarios antes de insertarlos en HTML.
+| Ver clientes, riesgo, casos, acciones y catálogos | ✓ | ✓ | ✓ |
+| Registrar clientes, incidencias, notas y acciones | ✓ | ✓ | ✓ |
+| Cambiar estado de incidencias y resultado de acciones | ✓ | ✓ | ✓ |
+| Editar clientes | ✓ | ✓ | |
+| Consultar auditoría y exportar CSV | ✓ | ✓ | |
+| Archivar clientes, gestionar usuarios y servicios | ✓ | | |
 
 ## Estructura
 
 ```text
 FugaCliente/
-  src/app.js                  Aplicación Express
-  src/server.js               Inicio y cierre del servidor
-  src/config/                 Entorno y conexiones
-  src/routes/                 Recursos del API
-  src/middlewares/             Sesión, roles, logging y validación
-  src/repositories/           SQL Server, MongoDB y demo temporal
-  src/services/               Riesgo, indicadores y outbox
-  database/schema.sql         Tablas, catálogos y procedimientos
-  public/                     Interfaz HTML, CSS y JavaScript
-  scripts/                    Preparación, carga de datos y diagnóstico
-  tests/                      Pruebas de comportamiento
-  docs/                       API, Postman, informe y sustentación
+├─ src/
+│  ├─ app.js               Fábrica de Express (sin abrir puertos: testeable)
+│  ├─ server.js            Arranque, worker del outbox y apagado ordenado
+│  ├─ container.js         Raíz de composición (inyección de dependencias)
+│  ├─ config/              Variables de entorno (Zod) y constantes de dominio
+│  ├─ middlewares/         security, logging, auth/roles, validate
+│  ├─ validators/          Esquemas Zod de cada recurso
+│  ├─ routes/              Un router por recurso + index (/api/v1)
+│  ├─ controllers/         Adaptadores HTTP
+│  ├─ services/            Casos de uso, motor de riesgo, analítica, reportes, outbox
+│  ├─ repositories/        sql.js · mongo.js · memory.js
+│  └─ utils/               Errores, paginación, respuestas HTTP, CSV
+├─ public/
+│  ├─ index.html · docs.html
+│  ├─ css/                 Sistema visual (tokens, claro/oscuro, responsive)
+│  ├─ js/core/             api, estado, plantillas seguras, componentes, gráficos SVG
+│  ├─ js/views/            panel, clientes, incidencias, retención, equipo, auditoría
+│  ├─ fonts/ · icons/      Inter (OFL) e iconos de la aplicación
+├─ database/schema.sql     Esquema idempotente
+├─ scripts/                setup, seed, doctor, demo, check, generación de OpenAPI/Postman
+├─ tests/                  41 pruebas de comportamiento + integración real opcional
+├─ docs/                   API.md, SUSTENTACION.md, VERIFICACION.md, OpenAPI, Postman, informe
+├─ Dockerfile · docker-compose.yml · .github/workflows/ci.yml
 ```
 
 ## Probar el API
 
-Importa `docs/FugaCliente.postman_collection.json` en Postman. La colección tiene 20 peticiones ordenadas. Ejecuta login y catálogos primero; guardan automáticamente el token y los IDs. Si cambiaste los datos del administrador, modifica las variables `email` y `password` de la colección. Los ejemplos crean únicamente datos ficticios.
-
-La especificación OpenAPI está en `docs/openapi.json` y se sirve en **http://localhost:3000/api/openapi.json**. Todos los recursos de negocio requieren el encabezado `Authorization: Bearer TOKEN`. La documentación detallada está en `docs/API.md`.
+- **Referencia interactiva**: http://localhost:3000/api/docs
+- **OpenAPI**: http://localhost:3000/api/openapi.json (regenerar con `npm run docs:api`)
+- **Postman**: importa `docs/FugaCliente.postman_collection.json` (23 peticiones en orden; guarda token e IDs automáticamente).
+- Detalle de rutas, filtros y códigos: `docs/API.md`.
 
 ## Verificación
 
 ```bash
-npm run check
-npm test
+npm run verify      # revisión de sintaxis + 41 pruebas
 ```
 
-`npm test` usa un repositorio temporal para comprobar lógica y contratos HTTP sin exigir bases instaladas. Incluye autenticación, permisos, entradas inválidas, duplicados, integridad de relaciones, concurrencia, reglas de riesgo y reintentos de auditoría. **No sustituye las pruebas con SQL Server y MongoDB reales.**
-
-Para una prueba real, configura bases aisladas cuyos nombres terminen en `_test`, ejecuta `npm run db:setup` contra ellas y después habilita la integración:
-
-PowerShell:
-
-```powershell
-$env:RUN_DB_INTEGRATION="1"
-npm run test:integration
-Remove-Item Env:RUN_DB_INTEGRATION
-```
-
-macOS/Linux:
+Las pruebas cubren autenticación, permisos, validación, duplicados, integridad, concurrencia, reglas de riesgo, outbox con fallos, panel, agregaciones, CSV, gestión de usuarios y servicios, versionado y CSP. Usan repositorios en memoria y **no sustituyen la prueba con bases reales**. Para ella usa bases cuyo nombre termine en `_test`:
 
 ```bash
-RUN_DB_INTEGRATION=1 npm run test:integration
+RUN_DB_INTEGRATION=1 npm run test:integration          # macOS/Linux
+$env:RUN_DB_INTEGRATION="1"; npm run test:integration   # PowerShell
 ```
 
-La integración crea registros identificables en esas bases de prueba y no elimina bases ni datos ajenos. Si no se habilita la variable, la prueba se omite. Antes de sustentar, vuelve a configurar las bases del proyecto y verifica que `/api/health` indique `mode: sqlmongo`, `sql: ok` y `mongo: ok`.
-
-La evidencia de verificaciones realizadas al preparar esta entrega y sus límites se detalla en `docs/VERIFICACION.md`.
-
-## Sustentación y documentos
-
-- `docs/SUSTENTACION.md`: recorrido de demostración, archivos que debes abrir y respuestas a las preguntas de reflexión del PDF.
-- `docs/API.md`: métodos, rutas, cuerpos y códigos HTTP.
-- `docs/VERIFICACION.md`: evidencia de pruebas y revisión.
-- `docs/Informe_FugaCliente.docx`: informe editable con problema, objetivos, requisitos, modelo de datos y explicación técnica.
-- `LEEME_PRIMERO.txt`: pasos breves para abrir el proyecto.
+La integración continua (`.github/workflows/ci.yml`) ejecuta la verificación con Node 22 y 24. La evidencia y sus límites están en `docs/VERIFICACION.md`.
 
 ## Problemas frecuentes
 
 | Situación | Qué revisar |
 |---|---|
 | `npm` no se reconoce | Instala Node.js y abre una terminal nueva |
-| PowerShell bloquea `npm.ps1` | Ejecuta `npm.cmd ci` y `npm.cmd run demo`, o usa CMD |
-| No aparece `package.json` | Abre la terminal dentro de la carpeta FugaCliente extraída |
-| Puerto ocupado | Cierra otro servidor o cambia `PORT` en `.env`; abre la nueva URL |
+| PowerShell bloquea `npm.ps1` | Usa `npm.cmd ci` y `npm.cmd run demo`, o CMD |
+| Puerto ocupado | Cambia `PORT` en `.env` |
 | Error de conexión SQL | Docker abierto, contenedor saludable, puerto TCP y contraseña de `.env` |
-| Fallo de contraseña en contenedor existente | La contraseña debe coincidir con la que inicializó su volumen; no cambia solo por editar `.env` |
-| Login falla tras editar `ADMIN_PASSWORD` | Ese valor se aplica solo al crear el administrador; usa la contraseña con la que se creó |
-| MongoDB no conecta | Revisa `MONGO_URI`, la red permitida y las credenciales si usas Atlas |
-| Auditoría no aparece de inmediato | Espera el intervalo del worker y revisa `outboxPending` en salud |
-| Cambiaste `.env` con el servidor abierto | Detén con Ctrl+C y vuelve a iniciar |
-| OpenAPI no abre | Comprueba que se incluyó `docs/openapi.json` y que el servidor está iniciado |
+| `doctor` indica que faltan vistas | Ejecuta de nuevo `npm run db:setup` (idempotente) |
+| Login falla tras editar `ADMIN_PASSWORD` | Solo se aplica al crear el administrador |
+| Auditoría no aparece de inmediato | Espera el intervalo del worker; revisa `outboxPending` en `/api/health` |
 
 ## Alcance y mejoras futuras
 
-Esta versión cubre un laboratorio académico y conjuntos de datos pequeños. Los listados con riesgo calculan una instantánea en memoria a partir de SQL; para miles de clientes conviene llevar las agregaciones a consultas paginadas o a un proceso por lotes, y medir el rendimiento. El outbox procesado necesita una política de limpieza si se usa durante largos periodos.
-
-Los pesos y umbrales requieren validación con datos históricos antes de usarse para decisiones comerciales reales. Otras ampliaciones posibles son notificaciones externas, recuperación de contraseña, asignación de permisos por cartera y un modelo entrenado. No se envían mensajes, correos ni compensaciones reales desde esta versión.
+Proyecto académico con conjuntos de datos pequeños: los listados con riesgo calculan una instantánea en memoria a partir de SQL. Para miles de clientes conviene precalcular el puntaje por lotes o en consultas agregadas. Los pesos requieren validación con datos históricos antes de usarse para decisiones reales. Posibles ampliaciones: notificaciones, recuperación de contraseña, carteras por agente y un modelo estadístico entrenado.
 
 ## Referencias técnicas
 
-- [Express · manejo de errores](https://expressjs.com/en/guide/error-handling.html).
-- [Microsoft · CREATE PROCEDURE](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql).
-- [node-mssql · documentación del cliente oficial del proyecto](https://github.com/tediousjs/node-mssql).
-- [MongoDB · índices en el driver de Node.js](https://www.mongodb.com/docs/drivers/node/current/indexes/).
-- Documento de evaluación proporcionado por el curso, páginas 5-10 y 12-15.
+- [Express · manejo de errores](https://expressjs.com/en/guide/error-handling.html)
+- [Microsoft · CREATE PROCEDURE](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql) · [CREATE VIEW](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql)
+- [node-mssql](https://github.com/tediousjs/node-mssql)
+- [MongoDB · índices](https://www.mongodb.com/docs/drivers/node/current/indexes/) · [$facet](https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/)
+- [Transactional Outbox](https://microservices.io/patterns/data/transactional-outbox.html)
+- Documento de evaluación del curso, páginas 5-10 y 12-15.
